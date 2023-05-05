@@ -1,6 +1,9 @@
+import tempfile
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import time
 
 
@@ -50,32 +53,55 @@ def get_photo_urls(username, max_cnt):
 
 def upload_photos(photos, caption):
     # Set up the web driver (make sure to have the correct driver executable installed)
-    driver = webdriver.Chrome('./chromedriver')
+    driver = webdriver.Chrome('./chromedriver', chrome_options=options)
 
     # Navigate to the Instagram login page
     driver.get('https://www.instagram.com/accounts/login/')
     time.sleep(2)
 
+    username = 'repinyury'
+    password = 'Raspberry201190!'
+
     # Log in with your username and password
-    username_field = driver.find_element(By.NAME, 'username')
-    username_field.send_keys('repinyury')
+    username_field = WebDriverWait(driver, 10).until(
+        EC.visibility_of_element_located((By.NAME, 'username'))
+    )
+    username_field.send_keys(username)
     password_field = driver.find_element(By.NAME, 'password')
-    password_field.send_keys('Raspberry201190!')
+    password_field.send_keys(password)
     password_field.send_keys(Keys.RETURN)
-    time.sleep(2)
-
-    # Navigate to the upload page
-    driver.get('https://www.instagram.com/create')
-    time.sleep(2)
-
-    # Upload the photo
-    upload_input = driver.find_element(By.XPATH, '//input[@type="file"]')
-    upload_input.send_keys('https://cdn.britannica.com/78/232778-050-D3701AB1/English-bulldog-dog.jpg')
     time.sleep(3)
 
-    # Add a caption (optional)
+    # Navigate to the upload page
+    driver.get('https://www.instagram.com/' + username)
+
+    new_post_button = WebDriverWait(driver, 10).until(
+        EC.visibility_of_element_located((By.CSS_SELECTOR, '[aria-label="New post"]'))
+    )
+    # new_post_button = driver.find_element(By.CSS_SELECTOR, '[aria-label="New post"]')
+    new_post_button.click()
+
+    # Upload the photo
+    upload_input = WebDriverWait(driver, 10).until(
+        EC.visibility_of_element_located((By.XPATH, '//input[@type="file"]'))
+    )
+    # upload_input = driver.find_element(By.XPATH, '//input[@type="file"]')
+
+    content = photos[0].file.read()
+
+    with tempfile.NamedTemporaryFile() as temp_file:
+        temp_file.write(content)
+        upload_input.send_keys(temp_file.name)
+    time.sleep(3)
+
+    post_button = driver.find_element(By.XPATH, '//button[contains(text(), "Next")]')
+    post_button.click()
+    post_button = driver.find_element(By.XPATH, '//button[contains(text(), "Next")]')
+    post_button.click()
+
+    # Add a caption
     caption_input = driver.find_element(By.CSS_SELECTOR, 'textarea[aria-label="Write a caption…"]')
-    caption_input.send_keys('Daddy in da house')
+    caption_input.send_keys(caption)
 
     # Post the photo
     post_button = driver.find_element(By.XPATH, '//button[contains(text(), "Post")]')
